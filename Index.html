@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de gastos semanal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif; background: #12151A; color: #EDEFF2; padding: 16px; max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 18px; font-weight: 700; margin: 4px 0 2px; }
+  .sub { font-size: 12px; color: #8B94A3; margin: 0 0 16px; }
+  .card { background: #1B1F26; border: 1px solid #262B34; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .label { font-size: 12px; color: #8B94A3; }
+  .big { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; }
+  .small-mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .barwrap { height: 8px; background: #262B34; border-radius: 4px; overflow: hidden; display: flex; margin: 10px 0 6px; }
+  .seg-fijo { background: #3FA796; }
+  .seg-var { background: #5DB0E0; }
+  .seg-nono { background: #E8A33D; }
+  .seg-over { background: #E85D5D; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: #8B94A3; margin-top: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: #8B94A3; font-weight: 600; margin: 22px 0 8px; }
+  input, select { width: 100%; background: #12151A; border: 1px solid #2E3440; color: #EDEFF2; border-radius: 8px; padding: 10px; font-size: 15px; font-family: inherit; margin-bottom: 8px; }
+  label.field { font-size: 11px; color: #8B94A3; display: block; margin-bottom: 3px; }
+  button { width: 100%; background: #3FA796; color: #0B1210; border: none; border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  button:active { opacity: 0.85; }
+  button.ghost { background: transparent; border: 1px solid #2E3440; color: #8B94A3; font-weight: 500; font-size: 13px; padding: 8px; margin-top: 6px; }
+  .entry { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #21252C; font-size: 13px; }
+  .entry:last-child { border-bottom: none; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-left: 8px; white-space: nowrap; }
+  .tag-fijo { background: #12352F; color: #5DCAA5; }
+  .tag-var { background: #123047; color: #7EC2ED; }
+  .tag-nono { background: #3A2A0F; color: #F0B85C; }
+  .del { color: #E85D5D; background: none; border: none; font-size: 16px; width: auto; padding: 0 0 0 10px; }
+  .empty { font-size: 12px; color: #5A616E; text-align: center; padding: 16px 0; }
+  .weeknav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .weeknav button { width: auto; padding: 6px 12px; font-size: 13px; background: #1B1F26; border: 1px solid #2E3440; color: #EDEFF2; }
+  .setup-toggle { text-align: center; font-size: 12px; color: #5A616E; margin-top: 4px; cursor: pointer; }
+  .warn { color: #E85D5D; font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+  <h1>Control de gastos</h1>
+  <p class="sub" id="weekLabel">Cargando...</p>
+
+  <div class="card">
+    <div class="weeknav">
+      <button id="prevWeek">← anterior</button>
+      <span class="small-mono" id="weekRange">-</span>
+      <button id="nextWeek">siguiente →</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row"><span class="label">Ahorro real esta semana</span></div>
+    <div class="big" id="savedThisWeek">$0</div>
+    <div class="grid2" style="margin-top:10px">
+      <div>
+        <div class="label">Ingreso semanal</div>
+        <div class="small-mono" id="incomeDisplay">$0</div>
+      </div>
+      <div>
+        <div class="label">Gastado esta semana</div>
+        <div class="small-mono" id="spentDisplay">$0</div>
+      </div>
+    </div>
+    <div class="barwrap" id="breakdownBar"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:#3FA796"></span>Fijo necesario</span>
+      <span><span class="dot" style="background:#5DB0E0"></span>Variable necesario</span>
+      <span><span class="dot" style="background:#E8A33D"></span>No necesario</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row"><span class="label">Ahorro acumulado (todas las semanas)</span></div>
+    <div class="big" id="totalSaved">$0</div>
+    <div class="row" style="margin-top:6px">
+      <span class="label" id="goalProgress"></span>
+    </div>
+  </div>
+
+  <h2>Registrar gasto</h2>
+  <div class="card">
+    <label class="field">Descripción</label>
+    <input type="text" id="descInput" placeholder="Ej: verdulería, ropa interior, regalo">
+    <label class="field">Monto (MXN)</label>
+    <input type="number" id="amountInput" placeholder="0" inputmode="decimal">
+    <label class="field">Categoría</label>
+    <select id="catInput">
+      <option value="fijo">Necesario fijo (alquiler, deuda, tarjeta)</option>
+      <option value="var" selected>Necesario variable (comida, ropa interior, salud)</option>
+      <option value="nono">No necesario (chocolates, salidas, caprichos)</option>
+    </select>
+    <div class="warn" id="formError" style="display:none"></div>
+    <button id="addBtn">Agregar gasto</button>
+  </div>
+
+  <h2>Gastos de la semana</h2>
+  <div class="card" id="entriesList">
+    <div class="empty">Todavía no cargaste gastos esta semana.</div>
+  </div>
+
+  <div class="setup-toggle" id="setupToggle">Ajustar ingreso semanal y gastos fijos</div>
+
+  <div class="card" id="setupCard" style="display:none; margin-top:10px;">
+    <label class="field">Ingreso semanal total (efectivo + digital + propinas)</label>
+    <input type="number" id="incomeInput" value="4750">
+    <label class="field">Alquiler mensual</label>
+    <input type="number" id="rentInput" value="3500">
+    <label class="field">Tarjeta mensual</label>
+    <input type="number" id="cardInput" value="350">
+    <label class="field">Cuota préstamo restante (por semana, mientras dure)</label>
+    <input type="number" id="loanInput" value="0">
+    <label class="field">Meta de ahorro total (para el viaje)</label>
+    <input type="number" id="goalInput" value="63000">
+    <label class="field">Ahorro que ya tenés ahorrado hoy (para no arrancar de cero)</label>
+    <input type="number" id="adjustInput" value="0">
+    <button class="ghost" id="saveSetup">Guardar configuración</button>
+  </div>
+
+<script>
+let state = { income: 4750, rent: 3500, card: 350, loanWeekly: 0, goal: 63000, adjustment: 0, weeks: {} };
+let currentWeekOffset = 0;
+
+function getMonday(d) {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+function weekKeyForOffset(offset) {
+  const monday = getMonday(new Date());
+  monday.setDate(monday.getDate() + offset * 7);
+  return monday.toISOString().slice(0,10);
+}
+function formatMoney(n) { return '$' + Math.round(n).toLocaleString('es-MX'); }
+
+async function loadState() {
+  try {
+    const raw = localStorage.getItem('config');
+    if (raw) {
+      const cfg = JSON.parse(raw);
+      state.income = cfg.income ?? state.income;
+      state.rent = cfg.rent ?? state.rent;
+      state.card = cfg.card ?? state.card;
+      state.loanWeekly = cfg.loanWeekly ?? state.loanWeekly;
+      state.goal = cfg.goal ?? state.goal;
+      state.adjustment = cfg.adjustment ?? state.adjustment;
+    }
+  } catch (e) {}
+  document.getElementById('incomeInput').value = state.income;
+  document.getElementById('rentInput').value = state.rent;
+  document.getElementById('cardInput').value = state.card;
+  document.getElementById('loanInput').value = state.loanWeekly;
+  document.getElementById('goalInput').value = state.goal;
+  document.getElementById('adjustInput').value = state.adjustment;
+}
+async function loadWeek(key) {
+  try {
+    const raw = localStorage.getItem('week:' + key);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { entries: [] };
+}
+async function saveWeek(key, data) {
+  try { localStorage.setItem('week:' + key, JSON.stringify(data)); } catch (e) {}
+}
+async function saveConfig() {
+  try {
+    localStorage.setItem('config', JSON.stringify({
+      income: state.income, rent: state.rent, card: state.card,
+      loanWeekly: state.loanWeekly, goal: state.goal, adjustment: state.adjustment
+    }));
+  } catch (e) {}
+}
+async function computeTotalSaved() {
+  let total = state.adjustment || 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('week:')) {
+        const key = k.replace('week:', '');
+        const wk = await loadWeek(key);
+        total += weekSavings(wk);
+      }
+    }
+  } catch (e) {}
+  return total;
+}
+function weekFixedCost() { return (state.rent / 4.33) + (state.card / 4.33) + state.loanWeekly; }
+function weekSavings(wk) {
+  const spent = (wk.entries || []).reduce((s, e) => s + e.amount, 0);
+  return state.income - spent - weekFixedCost();
+}
+
+let currentWeekData = { entries: [] };
+
+async function render() {
+  const key = weekKeyForOffset(currentWeekOffset);
+  currentWeekData = await loadWeek(key);
+  const monday = new Date(key);
+  const sunday = new Date(monday);
+  sunday.setDate(sunday.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+  document.getElementById('weekRange').textContent = fmt(monday) + ' – ' + fmt(sunday);
+  document.getElementById('weekLabel').textContent = currentWeekOffset === 0 ? 'Semana actual' : (currentWeekOffset < 0 ? 'Semana pasada' : 'Semana futura');
+
+  const fixedCost = weekFixedCost();
+  const entries = currentWeekData.entries || [];
+  const fijo = entries.filter(e => e.cat === 'fijo').reduce((s,e)=>s+e.amount,0) + fixedCost;
+  const varr = entries.filter(e => e.cat === 'var').reduce((s,e)=>s+e.amount,0);
+  const nono = entries.filter(e => e.cat === 'nono').reduce((s,e)=>s+e.amount,0);
+  const spent = fijo + varr + nono;
+  const saved = state.income - spent;
+
+  document.getElementById('incomeDisplay').textContent = formatMoney(state.income);
+  document.getElementById('spentDisplay').textContent = formatMoney(spent);
+  document.getElementById('savedThisWeek').textContent = formatMoney(saved);
+  document.getElementById('savedThisWeek').style.color = saved >= 0 ? '#5DCAA5' : '#E85D5D';
+
+  const bar = document.getElementById('breakdownBar');
+  bar.innerHTML = '';
+  const base = state.income > 0 ? state.income : spent || 1;
+  const segs = [ { val: fijo, cls: 'seg-fijo' }, { val: varr, cls: 'seg-var' }, { val: nono, cls: 'seg-nono' } ];
+  segs.forEach(s => {
+    if (s.val > 0) {
+      const div = document.createElement('div');
+      div.className = s.cls;
+      div.style.width = Math.min(100, (s.val / base) * 100) + '%';
+      bar.appendChild(div);
+    }
+  });
+  if (spent > state.income) {
+    const div = document.createElement('div');
+    div.className = 'seg-over';
+    div.style.width = Math.min(100, ((spent - state.income) / base) * 100) + '%';
+    bar.appendChild(div);
+  }
+
+  const list = document.getElementById('entriesList');
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="empty">Todavía no cargaste gastos esta semana.</div>';
+  } else {
+    list.innerHTML = '';
+    const tagMap = { fijo: ['Fijo', 'tag-fijo'], var: ['Variable', 'tag-var'], nono: ['No necesario', 'tag-nono'] };
+    entries.slice().reverse().forEach((e) => {
+      const realIdx = entries.indexOf(e);
+      const row = document.createElement('div');
+      row.className = 'entry';
+      const [label, cls] = tagMap[e.cat];
+      row.innerHTML = `<span>${e.desc}<span class="tag ${cls}">${label}</span></span>
+        <span style="display:flex;align-items:center;gap:4px">
+          <span class="small-mono">${formatMoney(e.amount)}</span>
+          <button class="del" data-idx="${realIdx}" aria-label="Eliminar">×</button>
+        </span>`;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const idx = parseInt(btn.dataset.idx);
+        currentWeekData.entries.splice(idx, 1);
+        await saveWeek(key, currentWeekData);
+        render();
+        renderTotals();
+      });
+    });
+  }
+}
+
+async function renderTotals() {
+  const total = await computeTotalSaved();
+  document.getElementById('totalSaved').textContent = formatMoney(total);
+  document.getElementById('totalSaved').style.color = total >= 0 ? '#EDEFF2' : '#E85D5D';
+  const pct = state.goal > 0 ? Math.max(0, Math.min(100, (total / state.goal) * 100)) : 0;
+  document.getElementById('goalProgress').textContent = `${pct.toFixed(1)}% de la meta de ${formatMoney(state.goal)}`;
+}
+
+document.getElementById('addBtn').addEventListener('click', async () => {
+  const desc = document.getElementById('descInput').value.trim();
+  const amount = parseFloat(document.getElementById('amountInput').value);
+  const cat = document.getElementById('catInput').value;
+  const errEl = document.getElementById('formError');
+  if (!desc || isNaN(amount) || amount <= 0) {
+    errEl.textContent = 'Cargá una descripción y un monto válido.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  const key = weekKeyForOffset(currentWeekOffset);
+  currentWeekData.entries = currentWeekData.entries || [];
+  currentWeekData.entries.push({ desc, amount, cat });
+  await saveWeek(key, currentWeekData);
+  document.getElementById('descInput').value = '';
+  document.getElementById('amountInput').value = '';
+  render();
+  renderTotals();
+});
+document.getElementById('prevWeek').addEventListener('click', () => { currentWeekOffset--; render(); });
+document.getElementById('nextWeek').addEventListener('click', () => { currentWeekOffset++; render(); });
+document.getElementById('setupToggle').addEventListener('click', () => {
+  const c = document.getElementById('setupCard');
+  c.style.display = c.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('saveSetup').addEventListener('click', async () => {
+  state.income = parseFloat(document.getElementById('incomeInput').value) || 0;
+  state.rent = parseFloat(document.getElementById('rentInput').value) || 0;
+  state.card = parseFloat(document.getElementById('cardInput').value) || 0;
+  state.loanWeekly = parseFloat(document.getElementById('loanInput').value) || 0;
+  state.goal = parseFloat(document.getElementById('goalInput').value) || 0;
+  state.adjustment = parseFloat(document.getElementById('adjustInput').value) || 0;
+  await saveConfig();
+  render();
+  renderTotals();
+  document.getElementById('setupCard').style.display = 'none';
+});
+(async () => { await loadState(); await render(); await renderTotals(); })();
+</script>
+</body>
+</html>
