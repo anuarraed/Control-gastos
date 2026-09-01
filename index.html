@@ -25,4 +25,499 @@
   .alert-banner { background: #2A1B1B; border: 1px solid #4A2C2C; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 12.5px; color: #F0A8A8; }
   .alert-banner div { margin-bottom: 3px; }
   .alert-banner div:last-child { margin-bottom: 0; }
-  .donut-wrap { display: flex; justify-content: center; pad
+  .donut-wrap { display: flex; justify-content: center; padding: 14px 0 4px; }
+  .donut { width: 190px; height: 190px; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; }
+  .donut-hole { width: 118px; height: 118px; border-radius: 50%; background: #1B1F26; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .donut-hole .amt { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; }
+  .donut-hole .lbl { font-size: 10px; color: #8B94A3; margin-top: 2px; }
+  .legend-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #21252C; }
+  .legend-row:last-child { border-bottom: none; }
+  .legend-left { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .cat-name { font-size: 13px; }
+  .legend-right { text-align: right; }
+  .amt-line { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+  .pct-line { font-size: 10.5px; margin-top: 1px; }
+  .pct-ok { color: #5DCAA5; }
+  .pct-bad { color: #E85D5D; }
+  table.guide { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.guide th { text-align: right; color: #8B94A3; font-weight: 500; font-size: 11px; padding-bottom: 6px; }
+  table.guide th:first-child, table.guide td:first-child { text-align: left; }
+  table.guide td { padding: 6px 0; border-top: 1px solid #21252C; font-family: 'IBM Plex Mono', monospace; text-align: right; }
+  .entry { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #21252C; font-size: 13px; }
+  .entry:last-child { border-bottom: none; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-left: 8px; white-space: nowrap; }
+  .empty { font-size: 12px; color: #5A616E; text-align: center; padding: 16px 0; }
+  .toggle-group { display: flex; gap: 6px; margin-bottom: 10px; }
+  .toggle-group button { flex: 1; background: #12151A; border: 1px solid #2E3440; color: #8B94A3; }
+  .toggle-group button.active { background: #23342F; border-color: #3FA796; color: #5DCAA5; }
+  .hist-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #21252C; font-size: 12.5px; }
+  .hist-row:last-child { border-bottom: none; }
+  .config-toggle, .hist-toggle { text-align: center; font-size: 12px; color: #5A616E; margin-top: 4px; padding: 10px 0; cursor: pointer; }
+  .warn { color: #E85D5D; font-size: 12px; margin-top: 6px; }
+  .radio-group { display: flex; gap: 8px; margin-bottom: 8px; }
+  .radio-group label { flex: 1; text-align: center; background: #12151A; border: 1px solid #2E3440; border-radius: 8px; padding: 10px; font-size: 13px; cursor: pointer; }
+  .radio-group input { display: none; }
+  .radio-group input:checked + span { color: #5DCAA5; }
+  .radio-group label.checked { border-color: #3FA796; background: #17211F; }
+  .cfg-item { background: #12151A; border: 1px solid #262B34; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+  <h1 id="monthLabel">-</h1>
+  <p class="sub">Registro mensual de ingresos y gastos</p>
+
+  <div id="alertBanner"></div>
+
+  <div class="card">
+    <div class="donut-wrap"><div class="donut" id="donut"><div class="donut-hole"><div class="amt" id="donutAmt">$0</div><div class="lbl" id="donutLbl">ahorro del mes</div></div></div></div>
+    <div id="legendList"></div>
+  </div>
+
+  <h2>Guía de montos óptimos</h2>
+  <div class="card">
+    <table class="guide">
+      <thead><tr><th>Categoría</th><th>% óptimo</th><th>por semana</th><th>por mes</th></tr></thead>
+      <tbody id="guideBody"></tbody>
+    </table>
+    <div class="label" id="guideNote" style="margin-top:8px"></div>
+  </div>
+
+  <h2>Registrar movimiento</h2>
+  <div class="card">
+    <div class="radio-group" id="typeGroup">
+      <label id="lblIngreso"><input type="radio" name="movType" value="income" checked><span>↑ Ingreso</span></label>
+      <label id="lblGasto"><input type="radio" name="movType" value="expense"><span>↓ Gasto</span></label>
+    </div>
+    <div id="necesidadWrap" style="display:none">
+      <div class="radio-group" id="necGroup">
+        <label id="lblNecesario"><input type="radio" name="necType" value="necesario" checked><span>Necesario</span></label>
+        <label id="lblNoNecesario"><input type="radio" name="necType" value="no_necesario"><span>No necesario</span></label>
+      </div>
+    </div>
+    <label class="field">Categoría</label>
+    <input type="text" id="catInput" list="catList" placeholder="Ej: Sueldo Quadra, Alquiler, Comida">
+    <datalist id="catList"></datalist>
+    <label class="field">Monto (MXN)</label>
+    <input type="number" id="amountInput" placeholder="0" inputmode="decimal">
+    <label class="field">Fecha</label>
+    <input type="date" id="dateInput">
+    <div class="warn" id="formError" style="display:none"></div>
+    <button id="addBtn">Agregar</button>
+  </div>
+
+  <h2>Movimientos del mes</h2>
+  <div class="card" id="entriesList"><div class="empty">Todavía no cargaste nada este mes.</div></div>
+
+  <div class="hist-toggle" id="catSummaryToggle">▸ Resumen por categoría (este mes)</div>
+  <div class="card" id="catSummaryCard" style="display:none"></div>
+
+  <h2>Ahorro acumulado total</h2>
+  <div class="card">
+    <div class="big" id="totalSaved">$0</div>
+    <div class="label" id="goalProgress" style="margin-top:4px"></div>
+  </div>
+
+  <h2>Historial</h2>
+  <div class="card">
+    <div class="toggle-group">
+      <button id="histWeekBtn">Semanal</button>
+      <button id="histMonthBtn">Mensual</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <div class="config-toggle" id="configToggle">⚙ Configuración</div>
+  <div class="card" id="configCard" style="display:none">
+    <label class="field">% óptimo — Necesario</label>
+    <input type="number" id="pctNecesario">
+    <label class="field">% óptimo — No necesario</label>
+    <input type="number" id="pctNoNecesario">
+    <div class="label" id="pctAhorroHint" style="margin-bottom:10px"></div>
+    <label class="field">Ahorro que ya tenés hoy (ajuste inicial)</label>
+    <input type="number" id="startingBalanceInput">
+    <label class="field">Meta de ahorro (opcional)</label>
+    <input type="number" id="goalInput">
+    <button id="saveConfigBtn" style="margin-bottom:14px">Guardar configuración</button>
+    <button class="ghost" id="exportBtn" style="margin-bottom:8px">Exportar datos (copiar)</button>
+    <button class="danger-ghost" id="resetBtn">Borrar todos los datos</button>
+  </div>
+
+<script>
+function uid() { return Math.random().toString(36).slice(2, 9); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function parseNum(v) { const n = parseFloat(String(v).replace(/,/g, '').trim()); return isNaN(n) ? 0 : n; }
+function formatMoney(n) { return '$' + Math.round(n).toLocaleString('es-MX'); }
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function getMonthKey(dateStr) { return dateStr.slice(0,7); }
+function getMonday(d) {
+  const date = new Date(d + 'T00:00:00');
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  return date.toISOString().slice(0,10);
+}
+function getWeekKey(dateStr) { return getMonday(dateStr); }
+function monthLabelFromKey(key) {
+  const d = new Date(key + '-01T00:00:00');
+  const s = d.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function weekLabelFromKey(key) {
+  const monday = new Date(key + 'T00:00:00');
+  const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+  return fmt(monday) + ' – ' + fmt(sunday);
+}
+
+const PALETTE_NEC = '#5DB0E0';
+const PALETTE_NONO = '#E8A33D';
+const PALETTE_SAVE = '#EDEFF2';
+const PALETTE_OVER = '#E85D5D';
+const ALERT_MARGIN = 2;
+
+let state = null;
+
+function defaultState() {
+  return { settings: { pctNecesario: 35, pctNoNecesario: 5, startingBalance: 0, goal: 0 }, entries: [] };
+}
+function load() {
+  try {
+    const raw = localStorage.getItem('cg_v3');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+function save() {
+  try {
+    localStorage.setItem('cg_v3', JSON.stringify(state));
+    return true;
+  } catch (e) {
+    alert('No se pudo guardar en este navegador: ' + e.message + '\n\nRevisá que Safari no esté en modo privado y que "Bloquear todas las cookies" esté desactivado en Ajustes > Safari.');
+    return false;
+  }
+}
+
+let historyMode = 'week';
+const currentMonthKey = getMonthKey(todayStr());
+
+function entriesInMonth(monthKey) {
+  return state.entries.filter(e => getMonthKey(e.date) === monthKey);
+}
+
+function computeTotals(entries) {
+  let income = 0, nec = 0, nono = 0;
+  entries.forEach(e => {
+    if (e.type === 'income') income += e.amount;
+    else if (e.necessity === 'necesario') nec += e.amount;
+    else nono += e.amount;
+  });
+  return { income, nec, nono, ahorro: income - nec - nono };
+}
+
+function optimalAhorroPct() {
+  return Math.max(0, 100 - (parseFloat(state.settings.pctNecesario)||0) - (parseFloat(state.settings.pctNoNecesario)||0));
+}
+
+function renderAlerts(t) {
+  const box = document.getElementById('alertBanner');
+  const alerts = [];
+  const s = state.settings;
+  if (t.income > 0) {
+    const necPct = (t.nec / t.income) * 100;
+    const nonoPct = (t.nono / t.income) * 100;
+    const ahorroPct = (t.ahorro / t.income) * 100;
+    if (necPct > s.pctNecesario + ALERT_MARGIN) alerts.push(`⚠ Gasto necesario en ${necPct.toFixed(0)}%, por encima del ${s.pctNecesario}% óptimo.`);
+    if (nonoPct > s.pctNoNecesario + ALERT_MARGIN) alerts.push(`⚠ Gasto no necesario en ${nonoPct.toFixed(0)}%, por encima del ${s.pctNoNecesario}% óptimo.`);
+    if (ahorroPct < optimalAhorroPct() - ALERT_MARGIN) alerts.push(`⚠ Ahorro en ${ahorroPct.toFixed(0)}%, por debajo del ${optimalAhorroPct().toFixed(0)}% óptimo.`);
+  }
+  if (alerts.length === 0) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="alert-banner">${alerts.map(a => `<div>${a}</div>`).join('')}</div>`;
+}
+
+function renderDonutAndLegend(t) {
+  const base = Math.max(t.income, t.nec + t.nono, 1);
+  let cursor = 0;
+  const stops = [];
+  if (t.nec > 0) { const p = (t.nec/base)*100; stops.push(`${PALETTE_NEC} ${cursor}% ${cursor+p}%`); cursor += p; }
+  if (t.nono > 0) { const p = (t.nono/base)*100; stops.push(`${PALETTE_NONO} ${cursor}% ${cursor+p}%`); cursor += p; }
+  if (t.ahorro > 0) { const p = (t.ahorro/base)*100; stops.push(`${PALETTE_SAVE} ${cursor}% ${cursor+p}%`); cursor += p; }
+  else if (t.ahorro < 0) { const p = (Math.abs(t.ahorro)/base)*100; stops.push(`${PALETTE_OVER} ${cursor}% ${cursor+p}%`); cursor += p; }
+  if (stops.length === 0) stops.push('#262B34 0% 100%');
+  document.getElementById('donut').style.background = `conic-gradient(${stops.join(', ')})`;
+  document.getElementById('donutAmt').textContent = formatMoney(t.ahorro);
+  document.getElementById('donutAmt').style.color = t.ahorro >= 0 ? '#5DCAA5' : '#E85D5D';
+  document.getElementById('donutLbl').textContent = t.ahorro >= 0 ? 'ahorro del mes' : 'sobregiro del mes';
+
+  const income = t.income;
+  const rows = [
+    { name: 'Necesario', color: PALETTE_NEC, val: t.nec, optimal: parseFloat(state.settings.pctNecesario)||0, mode: 'max' },
+    { name: 'No necesario', color: PALETTE_NONO, val: t.nono, optimal: parseFloat(state.settings.pctNoNecesario)||0, mode: 'max' },
+    { name: 'Ahorro', color: t.ahorro >= 0 ? PALETTE_SAVE : PALETTE_OVER, val: t.ahorro, optimal: optimalAhorroPct(), mode: 'min' }
+  ];
+  const legend = document.getElementById('legendList');
+  legend.innerHTML = '';
+  rows.forEach(r => {
+    const actualPct = income > 0 ? (r.val/income)*100 : 0;
+    const isBad = income > 0 && (r.mode === 'max' ? actualPct > r.optimal + ALERT_MARGIN : actualPct < r.optimal - ALERT_MARGIN);
+    const row = document.createElement('div');
+    row.className = 'legend-row';
+    row.innerHTML = `
+      <div class="legend-left"><span class="dot" style="background:${r.color}"></span><span class="cat-name">${r.name}</span></div>
+      <div class="legend-right">
+        <div class="amt-line">${formatMoney(r.val)}</div>
+        <div class="pct-line ${isBad ? 'pct-bad' : 'pct-ok'}">${income > 0 ? actualPct.toFixed(1)+'%' : '-'} / óptimo ${r.optimal.toFixed(0)}%${isBad ? ' ⚠' : ''}</div>
+      </div>`;
+    legend.appendChild(row);
+  });
+}
+
+function renderGuide(t) {
+  const income = t.income;
+  const tbody = document.getElementById('guideBody');
+  const note = document.getElementById('guideNote');
+  if (income <= 0) {
+    tbody.innerHTML = '';
+    note.textContent = 'Cargá tus ingresos del mes para ver los montos óptimos en pesos.';
+    return;
+  }
+  note.textContent = '';
+  const weekly = income / 4.33;
+  const rows = [
+    { name: 'Necesario', pct: parseFloat(state.settings.pctNecesario)||0 },
+    { name: 'No necesario', pct: parseFloat(state.settings.pctNoNecesario)||0 },
+    { name: 'Ahorro', pct: optimalAhorroPct() }
+  ];
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td style="font-family:'Space Grotesk',sans-serif">${r.name}</td>
+      <td>${r.pct.toFixed(0)}%</td>
+      <td>${formatMoney(weekly * r.pct/100)}</td>
+      <td>${formatMoney(income * r.pct/100)}</td>
+    </tr>`).join('');
+}
+
+function renderEntriesList(entries) {
+  const list = document.getElementById('entriesList');
+  if (entries.length === 0) { list.innerHTML = '<div class="empty">Todavía no cargaste nada este mes.</div>'; return; }
+  list.innerHTML = '';
+  entries.slice().sort((a,b) => b.date.localeCompare(a.date)).forEach(e => {
+    const row = document.createElement('div');
+    row.className = 'entry';
+    let tagHtml = '';
+    let color = PALETTE_SAVE;
+    let sign = '+';
+    if (e.type === 'income') { color = '#5DCAA5'; tagHtml = `<span class="tag" style="background:#12352F;color:#5DCAA5">Ingreso</span>`; }
+    else {
+      sign = '-';
+      if (e.necessity === 'necesario') { color = PALETTE_NEC; tagHtml = `<span class="tag" style="background:#123047;color:#7EC2ED">Necesario</span>`; }
+      else { color = PALETTE_NONO; tagHtml = `<span class="tag" style="background:#3A2A0F;color:#F0B85C">No necesario</span>`; }
+    }
+    const d = new Date(e.date + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+    row.innerHTML = `<span>${esc(e.category)}${tagHtml}<br><span class="label" style="font-size:10.5px">${d}</span></span>
+      <span style="display:flex;align-items:center;gap:4px">
+        <span class="mono" style="font-size:13px;color:${color}">${sign}${formatMoney(e.amount)}</span>
+        <button class="del-row" data-id="${e.id}">×</button>
+      </span>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.del-row').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.entries = state.entries.filter(e => e.id !== btn.dataset.id);
+      save(); renderAll();
+    });
+  });
+}
+
+function renderCategorySummary(entries) {
+  const card = document.getElementById('catSummaryCard');
+  const incomeMap = {}, expenseMap = {};
+  entries.forEach(e => {
+    const map = e.type === 'income' ? incomeMap : expenseMap;
+    map[e.category] = (map[e.category] || 0) + e.amount;
+  });
+  const buildList = (map, label) => {
+    const keys = Object.keys(map).sort((a,b) => map[b]-map[a]);
+    if (keys.length === 0) return '';
+    return `<div class="label" style="margin:8px 0 4px">${label}</div>` + keys.map(k =>
+      `<div class="hist-row"><span>${esc(k)}</span><span class="mono">${formatMoney(map[k])}</span></div>`).join('');
+  };
+  const html = buildList(incomeMap, 'Ingresos') + buildList(expenseMap, 'Gastos');
+  card.innerHTML = html || '<div class="empty">Nada cargado todavía.</div>';
+}
+
+function computeTotalSaved() {
+  let total = parseFloat(state.settings.startingBalance) || 0;
+  state.entries.forEach(e => { total += e.type === 'income' ? e.amount : -e.amount; });
+  return total;
+}
+
+function renderTotalSaved() {
+  const total = computeTotalSaved();
+  document.getElementById('totalSaved').textContent = formatMoney(total);
+  document.getElementById('totalSaved').style.color = total >= 0 ? '#EDEFF2' : '#E85D5D';
+  const goal = parseFloat(state.settings.goal) || 0;
+  if (goal > 0) {
+    const pct = Math.max(0, Math.min(100, (total/goal)*100));
+    document.getElementById('goalProgress').textContent = `${pct.toFixed(1)}% de la meta de ${formatMoney(goal)}`;
+  } else {
+    document.getElementById('goalProgress').textContent = '';
+  }
+}
+
+function renderHistory() {
+  document.getElementById('histWeekBtn').className = historyMode === 'week' ? 'active' : '';
+  document.getElementById('histMonthBtn').className = historyMode === 'month' ? 'active' : '';
+  const keyFn = historyMode === 'week' ? getWeekKey : getMonthKey;
+  const labelFn = historyMode === 'week' ? weekLabelFromKey : monthLabelFromKey;
+  const map = {};
+  state.entries.forEach(e => {
+    const key = keyFn(e.date);
+    if (!map[key]) map[key] = { income: 0, nec: 0, nono: 0 };
+    if (e.type === 'income') map[key].income += e.amount;
+    else if (e.necessity === 'necesario') map[key].nec += e.amount;
+    else map[key].nono += e.amount;
+  });
+  const keys = Object.keys(map).sort((a,b) => b.localeCompare(a));
+  const list = document.getElementById('historyList');
+  if (keys.length === 0) { list.innerHTML = '<div class="empty">Sin historial todavía.</div>'; return; }
+  const optAhorro = optimalAhorroPct();
+  list.innerHTML = keys.map(k => {
+    const v = map[k];
+    const ahorro = v.income - v.nec - v.nono;
+    const pct = v.income > 0 ? (ahorro/v.income)*100 : 0;
+    const bad = v.income > 0 && pct < optAhorro - ALERT_MARGIN;
+    return `<div class="hist-row">
+      <span>${labelFn(k)}</span>
+      <span style="text-align:right">
+        <div class="mono">Ing ${formatMoney(v.income)}</div>
+        <div class="mono ${bad ? 'pct-bad' : 'pct-ok'}">Ahorro ${formatMoney(ahorro)} (${v.income>0?pct.toFixed(0):'-'}%)</div>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function renderCategoryDatalist() {
+  const cats = [...new Set(state.entries.map(e => e.category))];
+  const dl = document.getElementById('catList');
+  dl.innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
+}
+
+function renderConfigInputs() {
+  document.getElementById('pctNecesario').value = state.settings.pctNecesario;
+  document.getElementById('pctNoNecesario').value = state.settings.pctNoNecesario;
+  document.getElementById('startingBalanceInput').value = state.settings.startingBalance;
+  document.getElementById('goalInput').value = state.settings.goal;
+  document.getElementById('pctAhorroHint').textContent = `Ahorro óptimo implícito: ${optimalAhorroPct().toFixed(0)}%`;
+}
+
+function renderAll() {
+  document.getElementById('monthLabel').textContent = monthLabelFromKey(currentMonthKey);
+  const monthEntries = entriesInMonth(currentMonthKey);
+  const totals = computeTotals(monthEntries);
+  renderAlerts(totals);
+  renderDonutAndLegend(totals);
+  renderGuide(totals);
+  renderEntriesList(monthEntries);
+  renderCategorySummary(monthEntries);
+  renderTotalSaved();
+  renderHistory();
+  renderCategoryDatalist();
+}
+
+// ---- form interactions ----
+document.querySelectorAll('input[name="movType"]').forEach(r => {
+  r.addEventListener('change', () => {
+    const isExpense = document.querySelector('input[name="movType"]:checked').value === 'expense';
+    document.getElementById('necesidadWrap').style.display = isExpense ? 'block' : 'none';
+    updateRadioStyles();
+  });
+});
+document.querySelectorAll('input[name="necType"]').forEach(r => r.addEventListener('change', updateRadioStyles));
+function updateRadioStyles() {
+  document.getElementById('lblIngreso').className = document.querySelector('input[name="movType"][value="income"]').checked ? 'checked' : '';
+  document.getElementById('lblGasto').className = document.querySelector('input[name="movType"][value="expense"]').checked ? 'checked' : '';
+  document.getElementById('lblNecesario').className = document.querySelector('input[name="necType"][value="necesario"]').checked ? 'checked' : '';
+  document.getElementById('lblNoNecesario').className = document.querySelector('input[name="necType"][value="no_necesario"]').checked ? 'checked' : '';
+}
+updateRadioStyles();
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const type = document.querySelector('input[name="movType"]:checked').value;
+  const necessity = type === 'expense' ? document.querySelector('input[name="necType"]:checked').value : undefined;
+  const category = document.getElementById('catInput').value.trim();
+  const amount = parseNum(document.getElementById('amountInput').value);
+  const date = document.getElementById('dateInput').value || todayStr();
+  const errEl = document.getElementById('formError');
+  if (!category || isNaN(amount) || amount <= 0) {
+    errEl.textContent = 'Completá categoría y un monto válido.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  const entry = { id: uid(), type, category, amount, date };
+  if (necessity) entry.necessity = necessity;
+  state.entries.push(entry);
+  save();
+  document.getElementById('catInput').value = '';
+  document.getElementById('amountInput').value = '';
+  renderAll();
+});
+
+document.getElementById('catSummaryToggle').addEventListener('click', () => {
+  const c = document.getElementById('catSummaryCard');
+  const open = c.style.display !== 'none';
+  c.style.display = open ? 'none' : 'block';
+  document.getElementById('catSummaryToggle').textContent = (open ? '▸' : '▾') + ' Resumen por categoría (este mes)';
+});
+
+document.getElementById('histWeekBtn').addEventListener('click', () => { historyMode = 'week'; renderHistory(); });
+document.getElementById('histMonthBtn').addEventListener('click', () => { historyMode = 'month'; renderHistory(); });
+
+document.getElementById('configToggle').addEventListener('click', () => {
+  const c = document.getElementById('configCard');
+  c.style.display = c.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('saveConfigBtn').addEventListener('click', () => {
+  state.settings.pctNecesario = parseNum(document.getElementById('pctNecesario').value);
+  state.settings.pctNoNecesario = parseNum(document.getElementById('pctNoNecesario').value);
+  state.settings.startingBalance = parseNum(document.getElementById('startingBalanceInput').value);
+  state.settings.goal = parseNum(document.getElementById('goalInput').value);
+  const ok = save();
+  renderConfigInputs();
+  renderAll();
+  if (ok) {
+    const btn = document.getElementById('saveConfigBtn');
+    const original = btn.textContent;
+    btn.textContent = 'Guardado ✓';
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  }
+});
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const text = JSON.stringify(state, null, 2);
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); alert('Datos copiados. Podés pegarlos en Notas como respaldo.'); }
+  catch (e) { alert('No se pudo copiar automáticamente.'); }
+  document.body.removeChild(ta);
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm('Esto borra todos los movimientos y la configuración. ¿Seguro?')) {
+    state = defaultState();
+    save();
+    renderConfigInputs();
+    renderAll();
+  }
+});
+
+(function init() {
+  state = load() || defaultState();
+  document.getElementById('dateInput').value = todayStr();
+  renderConfigInputs();
+  renderAll();
+})();
+</script>
+</body>
+</html>
